@@ -167,6 +167,62 @@ app.put('/usuarios/:id/aprovar', async (req, res) => {
     }  
 });     
 
+app.post('/login', async (req, res) => {
+
+    const { email, senha } = req.body;
+
+    try {
+
+        const sql = `
+            SELECT id, nome, email, senha_hash, perfil, ativo, status
+            FROM usuario
+            WHERE email = $1;
+        `;
+
+        const result = await pool.query(sql, [email]);
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({
+                erro: 'E-mail ou senha inválidos'
+            });
+        }
+
+        const usuario = result.rows[0];
+
+        const senhaValida = await bcrypt.compare(
+            senha,
+            usuario.senha_hash
+        );
+
+        if (!senhaValida) {
+            return res.status(401).json({
+                erro: 'E-mail ou senha inválidos'
+            });
+        }
+
+        if (usuario.status !== 'ATIVO' || !usuario.ativo) {
+            return res.status(403).json({
+                erro: 'Usuário sem acesso liberado'
+            });
+        }
+
+        res.json({
+            id: usuario.id,
+            nome: usuario.nome,
+            email: usuario.email,
+            perfil: usuario.perfil
+        });
+
+    } catch (error) {
+
+        console.error('Erro ao realizar login:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao realizar login'
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Servidor funcionando em http://localhost:${PORT}`);
 });
