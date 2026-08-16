@@ -91,7 +91,81 @@ app.post('/usuarios', async (req, res) => {
             erro: 'Erro ao cadastrar usuário'
         });
     }
-});    
+});  
+
+app.get('/usuarios/pendentes', async (req, res) => {
+
+    try {
+
+        const sql = `
+            SELECT id, nome, email, perfil, ativo, status
+            FROM usuario
+            WHERE status = 'PENDENTE'
+            ORDER BY id;
+        `;
+
+        const result = await pool.query(sql);
+
+        res.json(result.rows);
+
+    } catch (error) {
+
+        console.error('Erro ao buscar usuários pendentes:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao buscar usuários pendentes'
+        });
+    }
+});
+
+app.put('/usuarios/:id/aprovar', async (req, res) => {
+
+    const { id } = req.params;
+    const { perfil } = req.body;
+
+    const perfisPermitidos = [
+        'ADMIN',
+        'GERENTE',
+        'VENDEDOR',
+        'TECNICO'
+    ];
+
+    if (!perfisPermitidos.includes(perfil)) {
+        return res.status(400).json({
+            erro: 'Perfil inválido'
+        });
+    }
+
+    try {
+         const sql = `
+            UPDATE usuario
+            SET perfil = $1,
+                status = 'ATIVO',
+                ativo = true
+            WHERE id = $2
+              AND status = 'PENDENTE'
+            RETURNING id, nome, email, perfil, ativo, status;
+        `;
+
+        const result = await pool.query(sql, [perfil, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                erro: 'Usuário pendente não encontrado'
+            });
+        }
+
+        res.json(result.rows[0]);
+
+    } catch (error) {
+
+        console.error('Erro ao aprovar usuário:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao aprovar usuário'
+        });
+    }  
+});     
 
 app.listen(PORT, () => {
     console.log(`Servidor funcionando em http://localhost:${PORT}`);
