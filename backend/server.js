@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const pool = require('./db');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = 3000;
@@ -54,6 +55,43 @@ app.post('/pedidos', (req, res) => {
         }
     );
 });
+
+app.post('/usuarios', async (req, res) => {
+
+    const {
+        nome,
+        email,
+        senha
+    } = req.body;
+
+    try {
+
+        const senha_hash = await bcrypt.hash(senha, 10);
+
+        const sql = `
+            INSERT INTO usuario
+                (nome, email, senha_hash, perfil, ativo)
+            VALUES
+                ($1, $2, $3, NULL, false)
+            RETURNING id, nome, email, perfil, ativo;
+        `;
+
+        const result = await pool.query(
+            sql,
+            [nome, email, senha_hash]
+        );
+
+        res.status(201).json(result.rows[0]);
+
+    } catch (error) {
+
+        console.error('Erro ao cadastrar usuário:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao cadastrar usuário'
+        });
+    }
+});    
 
 app.listen(PORT, () => {
     console.log(`Servidor funcionando em http://localhost:${PORT}`);
