@@ -3,14 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema ADS</title>
+    <title>Amvtiz Soluções</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <form id="formPedido">
-        <label for="numero_pedido">Número do Pedido:</label>
-        <input type="text" id="numero_pedido" required>
 
-        <button type="submit">Cadastrar</button>
-    </form>
+<body>
+
+    <main class="login-container">
+
+        <section class="login-card">
+
+            <div class="brand">
+                <h1>Amvtiz</h1>
+                <p>Soluções</p>
+            </div>
+             <div class="login-header">
+                <h2>Entrar</h2>
+                <p>Acesse sua conta</p>
+            </div>
+
+            <form id="formLogin">
+
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="seu@email.com"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="senha">Senha</label>
+                    <input
+                        type="password"
+                        id="senha"
+                        placeholder="Digite sua senha"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Entrar
+                </button>
+
+            </form>
+
+            <p id="mensagem" class="mensagem"></p>
+
+            <div class="cadastro-link">
+                <span>Ainda não possui acesso?</span>
+                <a href="#">Criar uma conta</a>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+
 </body>
-</html>
+</html>    

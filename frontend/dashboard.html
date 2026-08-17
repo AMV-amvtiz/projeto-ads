@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amvtiz Soluções</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="dashboard-container">
+
+        <header class="dashboard-header">
+            <div>
+                <h1>Amvtiz</h1>
+                <p>Soluções</p>
+            </div>
+
+             <div>
+                <span>Olá, usuário</span>
+            </div>
+        </header>
+
+        <section class="dashboard-content">
+
+            <h2>Painel Inicial</h2>
+            <p>Bem-vindo ao sistema.</p>
+
+        </section>
+
+    </main>
+
+    <script>
+        const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+        if (usuario) {
+            document.querySelector('.dashboard-header span').textContent =
+                `Olá, ${usuario.nome}`;
+        }
+    </script>
+
+</body>
+</html>
+
