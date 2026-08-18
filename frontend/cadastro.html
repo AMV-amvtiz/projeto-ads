@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amvtiz Soluções - Cadastro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="login-container">
+
+        <section class="login-card">
+
+            <div class="brand">
+                <h1>Amvtiz</h1>
+                <p>Soluções</p>
+            </div>
+
+            <div class="login-header" id="cadastroHeader">
+                <h2>Criar acesso</h2>
+                <p>Cadastre seus dados para solicitar acesso ao sistema.</p>
+            </div>
+
+            <form id="formCadastro">
+
+                <div class="form-group">
+                    <label for="nome">Nome</label>
+                    <input
+                        type="text"
+                        id="nome"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input
+                        type="email"
+                        id="email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="senha">Senha</label>
+                    <input
+                        type="password"
+                        id="senha"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Cadastrar
+                </button>
+
+            </form>
+
+            <p id="mensagem" class="mensagem"></p>
+
+            <div class="cadastro-link">
+                <a href="index.html">Voltar para o login</a>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
+

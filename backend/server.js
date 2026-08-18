@@ -70,10 +70,10 @@ app.post('/usuarios', async (req, res) => {
 
         const sql = `
             INSERT INTO usuario
-                (nome, email, senha_hash, perfil, ativo)
+                (nome, email, senha_hash, perfil, ativo, status)
             VALUES
-                ($1, $2, $3, NULL, false)
-            RETURNING id, nome, email, perfil, ativo;
+                ($1, $2, $3, NULL, false, 'PENDENTE')
+            RETURNING id, nome, email, perfil, ativo, status;
         `;
 
         const result = await pool.query(
@@ -91,7 +91,7 @@ app.post('/usuarios', async (req, res) => {
             erro: 'Erro ao cadastrar usuário'
         });
     }
-});  
+});
 
 app.get('/usuarios/pendentes', async (req, res) => {
 
@@ -137,7 +137,8 @@ app.put('/usuarios/:id/aprovar', async (req, res) => {
     }
 
     try {
-         const sql = `
+
+        const sql = `
             UPDATE usuario
             SET perfil = $1,
                 status = 'ATIVO',
@@ -164,8 +165,8 @@ app.put('/usuarios/:id/aprovar', async (req, res) => {
         res.status(500).json({
             erro: 'Erro ao aprovar usuário'
         });
-    }  
-});     
+    }
+});
 
 app.post('/login', async (req, res) => {
 
