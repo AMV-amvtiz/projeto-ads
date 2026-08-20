@@ -93,15 +93,14 @@ app.post('/usuarios', async (req, res) => {
     }
 });
 
-app.get('/usuarios/pendentes', async (req, res) => {
+app.get('/usuarios', async (req, res) => {
 
     try {
 
         const sql = `
             SELECT id, nome, email, perfil, ativo, status
             FROM usuario
-            WHERE status = 'PENDENTE'
-            ORDER BY id;
+            ORDER BY id DESC;
         `;
 
         const result = await pool.query(sql);
@@ -110,10 +109,10 @@ app.get('/usuarios/pendentes', async (req, res) => {
 
     } catch (error) {
 
-        console.error('Erro ao buscar usuários pendentes:', error);
+        console.error('Erro ao buscar usuários:', error);
 
         res.status(500).json({
-            erro: 'Erro ao buscar usuários pendentes'
+            erro: 'Erro ao buscar usuários'
         });
     }
 });

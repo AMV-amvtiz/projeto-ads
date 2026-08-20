@@ -19,13 +19,14 @@
 
             <div>
                 <span>Olá, usuário</span>
+                <button type="button" onclick="sair()">Sair</button>
             </div>
         </header>
 
         <section class="dashboard-content">
 
             <h2>Painel Inicial</h2>
-            <p>Bem-vindo ao sistema.</p>
+            <p>Boas-vindas ao sistema.</p>
 
             <div id="areaAdmin" style="display: none; margin-top: 30px;">
 
@@ -51,7 +52,7 @@
 
             document.getElementById('areaAdmin').style.display = 'block';
 
-            fetch('/usuarios/pendentes')
+            fetch('/usuarios')
                 .then(resposta => resposta.json())
                 .then(usuarios => {
 
@@ -60,7 +61,7 @@
 
                     if (usuarios.length === 0) {
                         container.textContent =
-                            'Não há usuários pendentes.';
+                            'Não há usuários.';
                         return;
                     }
 
@@ -70,26 +71,50 @@
 
                         div.id = `usuario-${usuarioPendente.id}`;
 
-                        div.innerHTML = `
-                            <p>
-                                <strong>${usuarioPendente.nome}</strong>
-                                - ${usuarioPendente.email}
-                            </p>
+                        if (usuarioPendente.status === 'PENDENTE') {
 
-                            <select id="perfil-${usuarioPendente.id}">
-                                <option value="">Selecione o perfil</option>
-                                <option value="ADMIN">ADMIN</option>
-                                <option value="GERENTE">GERENTE</option>
-                                <option value="VENDEDOR">VENDEDOR</option>
-                                <option value="TECNICO">TECNICO</option>
-                            </select>
+                            div.innerHTML = `
+                                <p>
+                                    <strong>${usuarioPendente.nome}</strong>
+                                    - ${usuarioPendente.email}
+                                </p>
 
-                            <button onclick="aprovarUsuario(${usuarioPendente.id})">
-                                Aprovar
-                            </button>
+                                <p>
+                                    Status: <strong>PENDENTE</strong>
+                                </p>
 
-                            <hr>
-                        `;
+                                <select id="perfil-${usuarioPendente.id}">
+                                    <option value="">Selecione o perfil</option>
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="GERENTE">GERENTE</option>
+                                    <option value="VENDEDOR">VENDEDOR</option>
+                                    <option value="TECNICO">TECNICO</option>
+                                </select>
+
+                                <button onclick="aprovarUsuario(${usuarioPendente.id})">
+                                    Aprovar
+                                </button>
+
+                                <hr>
+                            `;
+
+                        } else {
+
+                            div.innerHTML = `
+                                <p>
+                                    <strong>${usuarioPendente.nome}</strong>
+                                    - ${usuarioPendente.email}
+                                </p>
+
+                                <p>
+                                    Perfil: <strong>${usuarioPendente.perfil}</strong>
+                                    <br>
+                                    Status: <strong>${usuarioPendente.status}</strong>
+                                </p>
+
+                                <hr>
+                            `;
+                        }
 
                         container.appendChild(div);
                     });
@@ -145,6 +170,11 @@
 
                 alert(dados.erro);
             }
+        }
+
+        function sair() {
+            localStorage.removeItem('usuario');
+            window.location.href = 'index.html';
         }
     </script>
 
