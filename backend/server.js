@@ -126,6 +126,60 @@ app.post('/pedidos', async (req, res) => {
     }
 });
 
+app.get('/pedidos', async (req, res) => {
+
+    const { usuario_id } = req.query;
+
+    try {
+
+        let sql = `
+            SELECT
+                p.id,
+                p.numero_pedido,
+                p.tipo_servico,
+                p.observacoes,
+                c.nome AS cliente,
+                o.nome AS obra,
+                o.endereco,
+                u.id AS usuario_id,
+                u.nome AS solicitado_por
+            FROM pedido p
+            JOIN obra o
+                ON o.id = p.obra_id
+            JOIN cliente c
+                ON c.id = o.cliente_id
+            JOIN usuario u
+                ON u.id = p.usuario_id
+        `;
+
+        const valores = [];
+
+        if (usuario_id) {
+            sql += `
+                WHERE p.usuario_id = $1
+            `;
+
+            valores.push(usuario_id);
+        }
+
+        sql += `
+            ORDER BY p.id DESC;
+        `;
+
+        const result = await pool.query(sql, valores);
+
+        res.json(result.rows);
+
+    } catch (error) {
+
+        console.error('Erro ao buscar solicitações:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao buscar solicitações'
+        });
+    }
+});
+
 app.post('/usuarios', async (req, res) => {
 
     const {
@@ -296,4 +350,3 @@ app.post('/login', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor funcionando em http://localhost:${PORT}`);
 });
-
