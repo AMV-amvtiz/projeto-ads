@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amvtiz Soluções - Solicitação de Medição</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="login-container">
+
+        <section class="login-card">
+
+            <div class="brand">
+                <h1>Amvtiz</h1>
+                <p>Soluções</p>
+            </div>
+
+            <div class="login-header" id="solicitacaoHeader">
+                <h2>Solicitação de Medição</h2>
+                <p>Informe os dados necessários para solicitar a medição.</p>
+            </div>
+
+            <form id="formSolicitacao">
+
+                <div class="form-group">
+                    <label for="cliente">Cliente</label>
+                    <input type="text" id="cliente" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="obra">Nome da Obra</label>
+                    <input type="text" id="obra" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="endereco">Endereço da Obra</label>
+                    <input type="text" id="endereco" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="numeroPedido">Nº do Pedido</label>
+                    <input type="text" id="numeroPedido" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipoServico">Tipo de Serviço</label>
+                    <input type="text" id="tipoServico" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="observacoes">Observações</label>
+                    <input type="text" id="observacoes">
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Solicitar Medição
+                </button>
+
+            </form>
+
+            <p id="mensagem" class="mensagem"></p>
+
+            <div class="cadastro-link">
+                <a href="dashboard.html">Voltar ao Painel</a>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
+

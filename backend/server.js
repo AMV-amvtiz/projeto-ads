@@ -18,42 +18,112 @@ pool.query('SELECT NOW()', (error, result) => {
     }
 });
 
-app.post('/pedidos', (req, res) => {
-    
+app.post('/pedidos', async (req, res) => {
+
     const {
+        cliente,
+        obra,
+        endereco,
         numero_pedido,
         tipo_servico,
         observacoes,
-        obra_id,
         usuario_id
     } = req.body;
 
-    console.log(numero_pedido);
-    console.log(tipo_servico);
-    console.log(observacoes);
-    console.log(obra_id);
-    console.log(usuario_id);
+    const client = await pool.connect();
 
-    const sql = `
-        INSERT INTO pedido
-            (numero_pedido, tipo_servico, observacoes, obra_id, usuario_id)
-        VALUES
-            ($1, $2, $3, $4, $5)
-        RETURNING *;
-    `;
+    try {
 
-    pool.query(
-        sql,
-        [numero_pedido, tipo_servico, observacoes, obra_id, usuario_id],
-        (error, result) => {
-            if (error) {
-                console.error('Erro ao inserir pedido:', error);
-                return res.status(500).json({ erro: 'Erro ao inserir pedido' });
-            }
+        await client.query('BEGIN');
 
-            res.status(201).json(result.rows[0]);
+        let clienteResult = await client.query(
+            `
+                SELECT id
+                FROM cliente
+                WHERE nome = $1
+                ORDER BY id
+                LIMIT 1;
+            `,
+            [cliente]
+        );
+
+        let clienteId;
+
+        if (clienteResult.rows.length > 0) {
+
+            clienteId = clienteResult.rows[0].id;
+
+        } else {
+
+            clienteResult = await client.query(
+                `
+                    INSERT INTO cliente (nome)
+                    VALUES ($1)
+                    RETURNING id;
+                `,
+                [cliente]
+            );
+
+            clienteId = clienteResult.rows[0].id;
         }
-    );
+
+        const obraResult = await client.query(
+            `
+                INSERT INTO obra
+                    (nome, endereco, cliente_id)
+                VALUES
+                    ($1, $2, $3)
+                RETURNING id;
+            `,
+            [obra, endereco, clienteId]
+        );
+
+        const obraId = obraResult.rows[0].id;
+
+        const pedidoResult = await client.query(
+            `
+                INSERT INTO pedido
+                    (
+                        numero_pedido,
+                        tipo_servico,
+                        observacoes,
+                        obra_id,
+                        usuario_id
+                    )
+                VALUES
+                    ($1, $2, $3, $4, $5)
+                RETURNING *;
+            `,
+            [
+                numero_pedido,
+                tipo_servico,
+                observacoes,
+                obraId,
+                usuario_id
+            ]
+        );
+
+        await client.query('COMMIT');
+
+        res.status(201).json({
+            mensagem: 'Solicitação registrada com sucesso',
+            pedido: pedidoResult.rows[0]
+        });
+
+    } catch (error) {
+
+        await client.query('ROLLBACK');
+
+        console.error('Erro ao registrar solicitação:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao registrar solicitação'
+        });
+
+    } finally {
+
+        client.release();
+    }
 });
 
 app.post('/usuarios', async (req, res) => {
@@ -226,3 +296,4 @@ app.post('/login', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor funcionando em http://localhost:${PORT}`);
 });
+
