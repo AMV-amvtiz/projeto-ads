@@ -138,11 +138,18 @@ app.get('/pedidos', async (req, res) => {
                 p.numero_pedido,
                 p.tipo_servico,
                 p.observacoes,
+                p.data_solicitacao,
                 c.nome AS cliente,
                 o.nome AS obra,
                 o.endereco,
                 u.id AS usuario_id,
-                u.nome AS solicitado_por
+                u.nome AS solicitado_por,
+                a.id AS agendamento_id,
+                a.data_agendamento,
+                a.hora_agendamento,
+                a.status AS status_agendamento,
+                a.tecnico_id,
+                t.nome AS tecnico
             FROM pedido p
             JOIN obra o
                 ON o.id = p.obra_id
@@ -150,6 +157,10 @@ app.get('/pedidos', async (req, res) => {
                 ON c.id = o.cliente_id
             JOIN usuario u
                 ON u.id = p.usuario_id
+            LEFT JOIN agendamento a
+                ON a.pedido_id = p.id
+            LEFT JOIN usuario t
+                ON t.id = a.tecnico_id
         `;
 
         const valores = [];
@@ -176,6 +187,185 @@ app.get('/pedidos', async (req, res) => {
 
         res.status(500).json({
             erro: 'Erro ao buscar solicitações'
+        });
+    }
+});
+
+app.get('/tecnicos', async (req, res) => {
+
+    try {
+
+        const sql = `
+            SELECT id, nome, email
+            FROM usuario
+            WHERE UPPER(perfil) = 'TECNICO'
+              AND ativo = true
+              AND status = 'ATIVO'
+            ORDER BY nome;
+        `;
+
+        const result = await pool.query(sql);
+
+        res.json(result.rows);
+
+    } catch (error) {
+
+        console.error('Erro ao buscar técnicos:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao buscar técnicos'
+        });
+    }
+});
+
+app.get('/agendamentos', async (req, res) => {
+
+    const { tecnico_id } = req.query;
+
+    if (!tecnico_id) {
+        return res.status(400).json({
+            erro: 'Técnico não informado'
+        });
+    }
+
+    try {
+
+        const sql = `
+            SELECT
+                a.id AS agendamento_id,
+                a.data_agendamento,
+                a.hora_agendamento,
+                a.status,
+                a.tecnico_id,
+                t.nome AS tecnico,
+                p.id AS pedido_id,
+                p.numero_pedido,
+                p.tipo_servico,
+                p.observacoes,
+                p.data_solicitacao,
+                c.nome AS cliente,
+                o.nome AS obra,
+                o.endereco,
+                s.nome AS solicitado_por
+            FROM agendamento a
+            JOIN pedido p
+                ON p.id = a.pedido_id
+            JOIN obra o
+                ON o.id = p.obra_id
+            JOIN cliente c
+                ON c.id = o.cliente_id
+            JOIN usuario s
+                ON s.id = p.usuario_id
+            JOIN usuario t
+                ON t.id = a.tecnico_id
+            WHERE a.tecnico_id = $1
+            ORDER BY
+                a.data_agendamento ASC,
+                a.hora_agendamento ASC;
+        `;
+
+        const result = await pool.query(
+            sql,
+            [tecnico_id]
+        );
+
+        res.json(result.rows);
+
+    } catch (error) {
+
+        console.error('Erro ao buscar agendamentos:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao buscar agendamentos'
+        });
+    }
+});
+
+app.post('/agendamentos', async (req, res) => {
+
+    const {
+        pedido_id,
+        data_agendamento,
+        hora_agendamento,
+        tecnico_id
+    } = req.body;
+
+    try {
+
+        const tecnicoResult = await pool.query(
+            `
+                SELECT id
+                FROM usuario
+                WHERE id = $1
+                  AND UPPER(perfil) = 'TECNICO'
+                  AND ativo = true
+                  AND status = 'ATIVO';
+            `,
+            [tecnico_id]
+        );
+
+        if (tecnicoResult.rows.length === 0) {
+            return res.status(400).json({
+                erro: 'Técnico inválido ou inativo'
+            });
+        }
+
+        const agendamentoExistente = await pool.query(
+            `
+                SELECT id
+                FROM agendamento
+                WHERE pedido_id = $1;
+            `,
+            [pedido_id]
+        );
+
+        if (agendamentoExistente.rows.length > 0) {
+            return res.status(400).json({
+                erro: 'Esta solicitação já possui agendamento'
+            });
+        }
+
+        const sql = `
+            INSERT INTO agendamento
+                (
+                    pedido_id,
+                    data_agendamento,
+                    hora_agendamento,
+                    status,
+                    tecnico_id
+                )
+            VALUES
+                ($1, $2, $3, 'AGENDADO', $4)
+            RETURNING
+                id,
+                pedido_id,
+                data_agendamento,
+                hora_agendamento,
+                status,
+                tecnico_id;
+        `;
+
+        const result = await pool.query(
+            sql,
+            [
+                pedido_id,
+                data_agendamento,
+                hora_agendamento,
+                tecnico_id
+            ]
+        );
+
+        res.status(201).json({
+            mensagem: 'Medição agendada com sucesso',
+            agendamento: result.rows[0]
+        });
+
+    } catch (error) {
+
+        console.error('Erro ao agendar medição:', error);
+
+        res.status(500).json({
+            erro: 'Erro ao agendar medição'
         });
     }
 });

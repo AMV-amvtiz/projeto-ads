@@ -175,7 +175,96 @@ body {
 }
 
 .dashboard-content p {
-    margin: 0;
     color: #666666;
+}
+
+.solicitacao-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    padding: 24px;
+    margin-top: 20px;
+    background: #ffffff;
+    border: 1px solid #e3e3e3;
+    border-radius: 10px;
+}
+
+.bloco-solicitacao {
+    padding-right: 20px;
+    border-right: 1px solid #e3e3e3;
+}
+
+.bloco-agendamento {
+    padding-left: 10px;
+}
+
+.bloco-solicitacao h3,
+.bloco-agendamento h3 {
+    margin: 0 0 20px;
+    font-size: 18px;
+    color: #252525;
+}
+
+.bloco-solicitacao p,
+.bloco-agendamento p {
+    margin: 0 0 10px;
+    line-height: 1.5;
+}
+
+.bloco-agendamento label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #444444;
+}
+
+.bloco-agendamento select,
+.bloco-agendamento input {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px solid #d6d6d6;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.bloco-agendamento button {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    background: #252525;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.bloco-agendamento button:hover {
+    background: #444444;
+}
+
+.mensagem-agendamento {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+@media (max-width: 760px) {
+
+    .solicitacao-card {
+        grid-template-columns: 1fr;
+    }
+
+    .bloco-solicitacao {
+        padding-right: 0;
+        padding-bottom: 20px;
+        border-right: none;
+        border-bottom: 1px solid #e3e3e3;
+    }
+
+    .bloco-agendamento {
+        padding-left: 0;
+    }
 }
 

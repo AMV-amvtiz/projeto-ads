@@ -46,7 +46,7 @@
 
             <div id="areaSolicitacoes" style="margin-top: 30px;">
 
-                <h2>Solicitações</h2>
+                <h2 id="tituloSolicitacoes">Solicitações</h2>
 
                 <div id="listaSolicitacoes"></div>
 
@@ -67,6 +67,8 @@
     <script>
         const usuario = JSON.parse(localStorage.getItem('usuario'));
 
+        let tecnicos = [];
+
         if (!usuario) {
             window.location.href = 'index.html';
         }
@@ -76,8 +78,6 @@
             document.querySelector('.dashboard-header span').textContent =
                 `Olá, ${usuario.nome}`;
 
-            carregarSolicitacoes();
-
             if (usuario.perfil === 'VENDEDOR') {
                 document.getElementById('acaoVendedor').style.display = 'block';
             }
@@ -86,6 +86,216 @@
                 document.getElementById('menuAdmin').style.display = 'block';
                 carregarUsuarios();
                 mostrarSolicitacoes();
+            }
+
+            if (usuario.perfil === 'TECNICO') {
+                document.getElementById('tituloSolicitacoes').textContent =
+                    'Meus Agendamentos';
+            }
+
+            iniciarDashboard();
+        }
+
+        function formatarData(dataRecebida) {
+
+            if (!dataRecebida) {
+                return '';
+            }
+
+            const data = new Date(dataRecebida);
+
+            const dataFormatada = data.toLocaleDateString(
+                'pt-BR',
+                {
+                    timeZone: 'UTC'
+                }
+            );
+
+            const diasSemana = [
+                'dom',
+                'seg',
+                'ter',
+                'qua',
+                'qui',
+                'sex',
+                'sáb'
+            ];
+
+            const diaSemana =
+                diasSemana[data.getUTCDay()];
+
+            return `${dataFormatada} (${diaSemana})`;
+        }
+
+        async function iniciarDashboard() {
+
+            if (
+                usuario.perfil === 'ADMIN' ||
+                usuario.perfil === 'GERENTE'
+            ) {
+                await carregarTecnicos();
+            }
+
+            if (usuario.perfil === 'TECNICO') {
+                await carregarAgendamentosTecnico();
+            } else {
+                await carregarSolicitacoes();
+            }
+        }
+
+        async function carregarTecnicos() {
+
+            try {
+
+                const resposta = await fetch('/tecnicos');
+
+                if (!resposta.ok) {
+                    tecnicos = [];
+                    return;
+                }
+
+                tecnicos = await resposta.json();
+
+            } catch (error) {
+
+                tecnicos = [];
+            }
+        }
+
+        async function carregarAgendamentosTecnico() {
+
+            const container =
+                document.getElementById('listaSolicitacoes');
+
+            container.innerHTML = '';
+
+            try {
+
+                const resposta = await fetch(
+                    `/agendamentos?tecnico_id=${usuario.id}`
+                );
+
+                const agendamentos = await resposta.json();
+
+                if (!resposta.ok) {
+                    container.textContent =
+                        'Erro ao carregar agendamentos.';
+                    return;
+                }
+
+                if (agendamentos.length === 0) {
+                    container.textContent =
+                        'Não há agendamentos atribuídos a você.';
+                    return;
+                }
+
+                agendamentos.forEach(agendamento => {
+
+                    const card = document.createElement('div');
+
+                    card.className = 'solicitacao-card';
+
+                    const dataSolicitacao =
+                        agendamento.data_solicitacao
+                            ? `
+                                <p>
+                                    <strong>Solicitado em:</strong>
+                                    ${formatarData(
+                                        agendamento.data_solicitacao
+                                    )}
+                                </p>
+                            `
+                            : '';
+
+                    const hora =
+                        agendamento.hora_agendamento.substring(0, 5);
+
+                    card.innerHTML = `
+                        <div class="bloco-solicitacao">
+
+                            <h3>Solicitação</h3>
+
+                            <p>
+                                <strong>Pedido:</strong>
+                                ${agendamento.numero_pedido}
+                            </p>
+
+                            <p>
+                                <strong>Cliente:</strong>
+                                ${agendamento.cliente}
+                            </p>
+
+                            <p>
+                                <strong>Obra:</strong>
+                                ${agendamento.obra}
+                            </p>
+
+                            <p>
+                                <strong>Endereço:</strong>
+                                ${agendamento.endereco}
+                            </p>
+
+                            <p>
+                                <strong>Tipo de Serviço:</strong>
+                                ${agendamento.tipo_servico}
+                            </p>
+
+                            <p>
+                                <strong>Solicitado por:</strong>
+                                ${agendamento.solicitado_por}
+                            </p>
+
+                            ${dataSolicitacao}
+
+                            ${
+                                agendamento.observacoes
+                                    ? `
+                                        <p>
+                                            <strong>Observações:</strong>
+                                            ${agendamento.observacoes}
+                                        </p>
+                                    `
+                                    : ''
+                            }
+
+                        </div>
+
+                        <div class="bloco-agendamento">
+
+                            <h3>Agendamento</h3>
+
+                            <p>
+                                <strong>Data:</strong>
+                                ${formatarData(
+                                    agendamento.data_agendamento
+                                )}
+                            </p>
+
+                            <p>
+                                <strong>Hora:</strong>
+                                ${hora}
+                            </p>
+
+                            <p>
+                                <strong>Técnico:</strong>
+                                ${agendamento.tecnico}
+                            </p>
+
+                            <p>
+                                <strong>Status:</strong>
+                                ${agendamento.status}
+                            </p>
+
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+
+            } catch (error) {
+
+                container.textContent =
+                    'Erro ao carregar agendamentos.';
             }
         }
 
@@ -121,56 +331,257 @@
 
                 solicitacoes.forEach(solicitacao => {
 
-                    const div = document.createElement('div');
+                    const card = document.createElement('div');
 
-                    div.innerHTML = `
-                        <p>
-                            <strong>Pedido:</strong>
-                            ${solicitacao.numero_pedido}
-                        </p>
+                    card.className = 'solicitacao-card';
 
-                        <p>
-                            <strong>Cliente:</strong>
-                            ${solicitacao.cliente}
-                            <br>
+                    let areaAgendamento = '';
 
-                            <strong>Obra:</strong>
-                            ${solicitacao.obra}
-                            <br>
+                    if (solicitacao.agendamento_id) {
 
-                            <strong>Endereço:</strong>
-                            ${solicitacao.endereco}
-                            <br>
+                        const dataAgendamento =
+                            formatarData(
+                                solicitacao.data_agendamento
+                            );
 
-                            <strong>Tipo de Serviço:</strong>
-                            ${solicitacao.tipo_servico}
-                            <br>
+                        const hora =
+                            solicitacao.hora_agendamento.substring(0, 5);
 
-                            <strong>Solicitado por:</strong>
-                            ${solicitacao.solicitado_por}
-                        </p>
+                        areaAgendamento = `
+                            <div class="bloco-agendamento">
 
-                        ${
-                            solicitacao.observacoes
-                                ? `
-                                    <p>
-                                        <strong>Observações:</strong>
-                                        ${solicitacao.observacoes}
-                                    </p>
-                                `
-                                : ''
-                        }
+                                <h3>Agendamento</h3>
 
-                        <hr>
+                                <p>
+                                    <strong>Data:</strong>
+                                    ${dataAgendamento}
+                                </p>
+
+                                <p>
+                                    <strong>Hora:</strong>
+                                    ${hora}
+                                </p>
+
+                                <p>
+                                    <strong>Técnico:</strong>
+                                    ${solicitacao.tecnico || 'Não informado'}
+                                </p>
+
+                                <p>
+                                    <strong>Status:</strong>
+                                    ${solicitacao.status_agendamento}
+                                </p>
+
+                            </div>
+                        `;
+
+                    } else if (
+                        usuario.perfil === 'ADMIN' ||
+                        usuario.perfil === 'GERENTE'
+                    ) {
+
+                        const opcoesTecnicos = tecnicos
+                            .map(tecnico => `
+                                <option value="${tecnico.id}">
+                                    ${tecnico.nome}
+                                </option>
+                            `)
+                            .join('');
+
+                        areaAgendamento = `
+                            <div
+                                class="bloco-agendamento"
+                                id="agendamento-${solicitacao.id}"
+                            >
+
+                                <h3>Agendar Medição</h3>
+
+                                <label for="tecnico-${solicitacao.id}">
+                                    Técnico
+                                </label>
+
+                                <select id="tecnico-${solicitacao.id}">
+                                    <option value="">
+                                        Selecione o técnico
+                                    </option>
+                                    ${opcoesTecnicos}
+                                </select>
+
+                                <label for="data-${solicitacao.id}">
+                                    Data
+                                </label>
+
+                                <input
+                                    type="date"
+                                    id="data-${solicitacao.id}"
+                                >
+
+                                <label for="hora-${solicitacao.id}">
+                                    Hora
+                                </label>
+
+                                <input
+                                    type="time"
+                                    id="hora-${solicitacao.id}"
+                                >
+
+                                <button
+                                    type="button"
+                                    onclick="agendarMedicao(${solicitacao.id})"
+                                >
+                                    Agendar
+                                </button>
+
+                                <p
+                                    class="mensagem-agendamento"
+                                    id="mensagem-agendamento-${solicitacao.id}"
+                                >
+                                </p>
+
+                            </div>
+                        `;
+
+                    } else {
+
+                        areaAgendamento = `
+                            <div class="bloco-agendamento">
+
+                                <h3>Agendamento</h3>
+
+                                <p>
+                                    <strong>Status:</strong>
+                                    AGUARDANDO AGENDAMENTO
+                                </p>
+
+                            </div>
+                        `;
+                    }
+
+                    const dataSolicitacao =
+                        solicitacao.data_solicitacao
+                            ? `
+                                <p>
+                                    <strong>Solicitado em:</strong>
+                                    ${formatarData(
+                                        solicitacao.data_solicitacao
+                                    )}
+                                </p>
+                            `
+                            : '';
+
+                    card.innerHTML = `
+                        <div class="bloco-solicitacao">
+
+                            <h3>Solicitação</h3>
+
+                            <p>
+                                <strong>Pedido:</strong>
+                                ${solicitacao.numero_pedido}
+                            </p>
+
+                            <p>
+                                <strong>Cliente:</strong>
+                                ${solicitacao.cliente}
+                            </p>
+
+                            <p>
+                                <strong>Obra:</strong>
+                                ${solicitacao.obra}
+                            </p>
+
+                            <p>
+                                <strong>Endereço:</strong>
+                                ${solicitacao.endereco}
+                            </p>
+
+                            <p>
+                                <strong>Tipo de Serviço:</strong>
+                                ${solicitacao.tipo_servico}
+                            </p>
+
+                            <p>
+                                <strong>Solicitado por:</strong>
+                                ${solicitacao.solicitado_por}
+                            </p>
+
+                            ${dataSolicitacao}
+
+                            ${
+                                solicitacao.observacoes
+                                    ? `
+                                        <p>
+                                            <strong>Observações:</strong>
+                                            ${solicitacao.observacoes}
+                                        </p>
+                                    `
+                                    : ''
+                            }
+
+                        </div>
+
+                        ${areaAgendamento}
                     `;
 
-                    container.appendChild(div);
+                    container.appendChild(card);
                 });
 
             } catch (error) {
 
                 document.getElementById('listaSolicitacoes').textContent =
                     'Erro ao carregar solicitações.';
+            }
+        }
+
+        async function agendarMedicao(pedidoId) {
+
+            const tecnicoId =
+                document.getElementById(`tecnico-${pedidoId}`).value;
+
+            const data =
+                document.getElementById(`data-${pedidoId}`).value;
+
+            const hora =
+                document.getElementById(`hora-${pedidoId}`).value;
+
+            const mensagem =
+                document.getElementById(
+                    `mensagem-agendamento-${pedidoId}`
+                );
+
+            if (!tecnicoId || !data || !hora) {
+                mensagem.textContent =
+                    'Informe técnico, data e hora.';
+                return;
+            }
+
+            try {
+
+                const resposta = await fetch('/agendamentos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pedido_id: pedidoId,
+                        data_agendamento: data,
+                        hora_agendamento: hora,
+                        tecnico_id: Number(tecnicoId)
+                    })
+                });
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    mensagem.textContent = dados.erro;
+                    return;
+                }
+
+                await carregarSolicitacoes();
+
+            } catch (error) {
+
+                mensagem.textContent =
+                    'Erro ao realizar agendamento.';
             }
         }
 
@@ -210,14 +621,18 @@
                                 </p>
 
                                 <select id="perfil-${usuarioPendente.id}">
-                                    <option value="">Selecione o perfil</option>
+                                    <option value="">
+                                        Selecione o perfil
+                                    </option>
                                     <option value="ADMIN">ADMIN</option>
                                     <option value="GERENTE">GERENTE</option>
                                     <option value="VENDEDOR">VENDEDOR</option>
                                     <option value="TECNICO">TECNICO</option>
                                 </select>
 
-                                <button onclick="aprovarUsuario(${usuarioPendente.id})">
+                                <button
+                                    onclick="aprovarUsuario(${usuarioPendente.id})"
+                                >
                                     Aprovar
                                 </button>
 
@@ -233,9 +648,12 @@
                                 </p>
 
                                 <p>
-                                    Perfil: <strong>${usuarioPendente.perfil}</strong>
+                                    Perfil:
+                                    <strong>${usuarioPendente.perfil}</strong>
                                     <br>
-                                    Status: <strong>${usuarioPendente.status}</strong>
+
+                                    Status:
+                                    <strong>${usuarioPendente.status}</strong>
                                 </p>
 
                                 <hr>
@@ -248,13 +666,19 @@
         }
 
         function mostrarSolicitacoes() {
-            document.getElementById('areaSolicitacoes').style.display = 'block';
-            document.getElementById('areaAdmin').style.display = 'none';
+            document.getElementById('areaSolicitacoes').style.display =
+                'block';
+
+            document.getElementById('areaAdmin').style.display =
+                'none';
         }
 
         function mostrarUsuarios() {
-            document.getElementById('areaSolicitacoes').style.display = 'none';
-            document.getElementById('areaAdmin').style.display = 'block';
+            document.getElementById('areaSolicitacoes').style.display =
+                'none';
+
+            document.getElementById('areaAdmin').style.display =
+                'block';
         }
 
         async function aprovarUsuario(id) {
