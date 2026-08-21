@@ -127,6 +127,17 @@
             return `${dataFormatada} (${diaSemana})`;
         }
 
+        function formatarStatus(status) {
+
+            const statusFormatados = {
+                'AGENDADO': 'AGENDADO',
+                'MEDICAO REALIZADA': 'MEDIÇÃO REALIZADA',
+                'MEDICAO NAO REALIZADA': 'MEDIÇÃO NÃO REALIZADA'
+            };
+
+            return statusFormatados[status] || status;
+        }
+
         async function iniciarDashboard() {
 
             if (
@@ -183,119 +194,363 @@
                     return;
                 }
 
-                if (agendamentos.length === 0) {
-                    container.textContent =
-                        'Não há agendamentos atribuídos a você.';
-                    return;
+                const pendentes = agendamentos
+                    .filter(agendamento =>
+                        agendamento.status === 'AGENDADO'
+                    )
+                    .sort((a, b) => {
+                        const dataA = new Date(
+                            `${a.data_agendamento.substring(0, 10)}T${a.hora_agendamento}`
+                        );
+
+                        const dataB = new Date(
+                            `${b.data_agendamento.substring(0, 10)}T${b.hora_agendamento}`
+                        );
+
+                        return dataA - dataB;
+                    });
+
+                const respondidos = agendamentos
+                    .filter(agendamento =>
+                        agendamento.status === 'MEDICAO REALIZADA' ||
+                        agendamento.status === 'MEDICAO NAO REALIZADA'
+                    )
+                    .sort((a, b) =>
+                        new Date(b.data_retorno) -
+                        new Date(a.data_retorno)
+                    );
+
+                const tituloPendentes =
+                    document.createElement('h3');
+
+                tituloPendentes.textContent = 'Pendentes';
+
+                container.appendChild(tituloPendentes);
+
+                const areaPendentes =
+                    document.createElement('div');
+
+                container.appendChild(areaPendentes);
+
+                if (pendentes.length === 0) {
+
+                    const mensagem =
+                        document.createElement('p');
+
+                    mensagem.textContent =
+                        'Nenhum atendimento pendente.';
+
+                    areaPendentes.appendChild(mensagem);
+
+                } else {
+
+                    pendentes.forEach(agendamento => {
+
+                        const card =
+                            criarCardTecnico(
+                                agendamento,
+                                true
+                            );
+
+                        areaPendentes.appendChild(card);
+                    });
                 }
 
-                agendamentos.forEach(agendamento => {
+                const tituloRespondidos =
+                    document.createElement('h3');
 
-                    const card = document.createElement('div');
+                tituloRespondidos.textContent = 'Respondidos';
+                tituloRespondidos.style.marginTop = '35px';
 
-                    card.className = 'solicitacao-card';
+                container.appendChild(tituloRespondidos);
 
-                    const dataSolicitacao =
-                        agendamento.data_solicitacao
-                            ? `
-                                <p>
-                                    <strong>Solicitado em:</strong>
-                                    ${formatarData(
-                                        agendamento.data_solicitacao
-                                    )}
-                                </p>
-                            `
-                            : '';
+                const areaRespondidos =
+                    document.createElement('div');
 
-                    const hora =
-                        agendamento.hora_agendamento.substring(0, 5);
+                container.appendChild(areaRespondidos);
 
-                    card.innerHTML = `
-                        <div class="bloco-solicitacao">
+                if (respondidos.length === 0) {
 
-                            <h3>Solicitação</h3>
+                    const mensagem =
+                        document.createElement('p');
 
-                            <p>
-                                <strong>Pedido:</strong>
-                                ${agendamento.numero_pedido}
-                            </p>
+                    mensagem.textContent =
+                        'Nenhum atendimento respondido.';
 
-                            <p>
-                                <strong>Cliente:</strong>
-                                ${agendamento.cliente}
-                            </p>
+                    areaRespondidos.appendChild(mensagem);
 
-                            <p>
-                                <strong>Obra:</strong>
-                                ${agendamento.obra}
-                            </p>
+                } else {
 
-                            <p>
-                                <strong>Endereço:</strong>
-                                ${agendamento.endereco}
-                            </p>
+                    respondidos.forEach(agendamento => {
 
-                            <p>
-                                <strong>Tipo de Serviço:</strong>
-                                ${agendamento.tipo_servico}
-                            </p>
+                        const card =
+                            criarCardTecnico(
+                                agendamento,
+                                false
+                            );
 
-                            <p>
-                                <strong>Solicitado por:</strong>
-                                ${agendamento.solicitado_por}
-                            </p>
-
-                            ${dataSolicitacao}
-
-                            ${
-                                agendamento.observacoes
-                                    ? `
-                                        <p>
-                                            <strong>Observações:</strong>
-                                            ${agendamento.observacoes}
-                                        </p>
-                                    `
-                                    : ''
-                            }
-
-                        </div>
-
-                        <div class="bloco-agendamento">
-
-                            <h3>Agendamento</h3>
-
-                            <p>
-                                <strong>Data:</strong>
-                                ${formatarData(
-                                    agendamento.data_agendamento
-                                )}
-                            </p>
-
-                            <p>
-                                <strong>Hora:</strong>
-                                ${hora}
-                            </p>
-
-                            <p>
-                                <strong>Técnico:</strong>
-                                ${agendamento.tecnico}
-                            </p>
-
-                            <p>
-                                <strong>Status:</strong>
-                                ${agendamento.status}
-                            </p>
-
-                        </div>
-                    `;
-
-                    container.appendChild(card);
-                });
+                        areaRespondidos.appendChild(card);
+                    });
+                }
 
             } catch (error) {
 
                 container.textContent =
                     'Erro ao carregar agendamentos.';
+            }
+        }
+
+        function criarCardTecnico(
+            agendamento,
+            pendente
+        ) {
+
+            const card =
+                document.createElement('div');
+
+            card.className = 'solicitacao-card';
+
+            const dataSolicitacao =
+                agendamento.data_solicitacao
+                    ? `
+                        <p>
+                            <strong>Solicitado em:</strong>
+                            ${formatarData(
+                                agendamento.data_solicitacao
+                            )}
+                        </p>
+                    `
+                    : '';
+
+            const hora =
+                agendamento.hora_agendamento.substring(0, 5);
+
+            let areaRetorno = '';
+
+            if (pendente) {
+
+                areaRetorno = `
+                    <div class="retorno-medicao">
+
+                        <h3>Retorno da Medição</h3>
+
+                        <label for="resultado-${agendamento.agendamento_id}">
+                            Resultado
+                        </label>
+
+                        <select id="resultado-${agendamento.agendamento_id}">
+                            <option value="">
+                                Selecione o resultado
+                            </option>
+                            <option value="MEDICAO REALIZADA">
+                                MEDIÇÃO REALIZADA
+                            </option>
+                            <option value="MEDICAO NAO REALIZADA">
+                                MEDIÇÃO NÃO REALIZADA
+                            </option>
+                        </select>
+
+                        <label for="observacoes-retorno-${agendamento.agendamento_id}">
+                            Observações
+                        </label>
+
+                        <textarea
+                            id="observacoes-retorno-${agendamento.agendamento_id}"
+                            rows="4"
+                            placeholder="Informe as observações do atendimento"
+                        ></textarea>
+
+                        <button
+                            type="button"
+                            onclick="confirmarRetorno(${agendamento.agendamento_id})"
+                        >
+                            Confirmar
+                        </button>
+
+                        <p
+                            class="mensagem-agendamento"
+                            id="mensagem-retorno-${agendamento.agendamento_id}"
+                        >
+                        </p>
+
+                    </div>
+                `;
+
+            } else {
+
+                areaRetorno = `
+                    <div class="retorno-medicao">
+
+                        <h3>Retorno da Medição</h3>
+
+                        <p>
+                            <strong>Resultado:</strong>
+                            ${formatarStatus(agendamento.status)}
+                        </p>
+
+                        <p>
+                            <strong>Observações:</strong>
+                            ${agendamento.observacoes_retorno}
+                        </p>
+
+                        <p style="font-size: 12px; color: #777777;">
+                            Resposta registrada em
+                            ${formatarData(
+                                agendamento.data_retorno
+                            )}
+                        </p>
+
+                    </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="bloco-solicitacao">
+
+                    <h3>Solicitação</h3>
+
+                    <p>
+                        <strong>Pedido:</strong>
+                        ${agendamento.numero_pedido}
+                    </p>
+
+                    <p>
+                        <strong>Cliente:</strong>
+                        ${agendamento.cliente}
+                    </p>
+
+                    <p>
+                        <strong>Obra:</strong>
+                        ${agendamento.obra}
+                    </p>
+
+                    <p>
+                        <strong>Endereço:</strong>
+                        ${agendamento.endereco}
+                    </p>
+
+                    <p>
+                        <strong>Tipo de Serviço:</strong>
+                        ${agendamento.tipo_servico}
+                    </p>
+
+                    <p>
+                        <strong>Solicitado por:</strong>
+                        ${agendamento.solicitado_por}
+                    </p>
+
+                    ${dataSolicitacao}
+
+                    ${
+                        agendamento.observacoes
+                            ? `
+                                <p>
+                                    <strong>Observações:</strong>
+                                    ${agendamento.observacoes}
+                                </p>
+                            `
+                            : ''
+                    }
+
+                </div>
+
+                <div class="bloco-agendamento">
+
+                    <h3>Agendamento</h3>
+
+                    <p>
+                        <strong>Data:</strong>
+                        ${formatarData(
+                            agendamento.data_agendamento
+                        )}
+                    </p>
+
+                    <p>
+                        <strong>Hora:</strong>
+                        ${hora}
+                    </p>
+
+                    <p>
+                        <strong>Técnico:</strong>
+                        ${agendamento.tecnico}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        ${formatarStatus(agendamento.status)}
+                    </p>
+
+                    ${areaRetorno}
+
+                </div>
+            `;
+
+            return card;
+        }
+
+        async function confirmarRetorno(
+            agendamentoId
+        ) {
+
+            const resultado =
+                document.getElementById(
+                    `resultado-${agendamentoId}`
+                ).value;
+
+            const observacoes =
+                document.getElementById(
+                    `observacoes-retorno-${agendamentoId}`
+                ).value.trim();
+
+            const mensagem =
+                document.getElementById(
+                    `mensagem-retorno-${agendamentoId}`
+                );
+
+            if (!resultado || !observacoes) {
+                mensagem.textContent =
+                    'Selecione o resultado e informe as observações.';
+                return;
+            }
+
+            const confirmar = window.confirm(
+                'Confirma o resultado da medição? Esta resposta não poderá ser alterada.'
+            );
+
+            if (!confirmar) {
+                return;
+            }
+
+            try {
+
+                const resposta = await fetch(
+                    `/agendamentos/${agendamentoId}/retorno`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            tecnico_id: usuario.id,
+                            status: resultado,
+                            observacoes_retorno: observacoes
+                        })
+                    }
+                );
+
+                const dados = await resposta.json();
+
+                if (!resposta.ok) {
+                    mensagem.textContent = dados.erro;
+                    return;
+                }
+
+                await carregarAgendamentosTecnico();
+
+            } catch (error) {
+
+                mensagem.textContent =
+                    'Erro ao registrar retorno da medição.';
             }
         }
 
@@ -369,8 +624,34 @@
 
                                 <p>
                                     <strong>Status:</strong>
-                                    ${solicitacao.status_agendamento}
+                                    ${formatarStatus(
+                                        solicitacao.status_agendamento
+                                    )}
                                 </p>
+
+                                ${
+                                    solicitacao.data_retorno
+                                        ? `
+                                            <div class="retorno-medicao">
+
+                                                <h3>Retorno da Medição</h3>
+
+                                                <p>
+                                                    <strong>Observações:</strong>
+                                                    ${solicitacao.observacoes_retorno}
+                                                </p>
+
+                                                <p style="font-size: 12px; color: #777777;">
+                                                    Resposta registrada em
+                                                    ${formatarData(
+                                                        solicitacao.data_retorno
+                                                    )}
+                                                </p>
+
+                                            </div>
+                                        `
+                                        : ''
+                                }
 
                             </div>
                         `;
@@ -744,4 +1025,3 @@
 
 </body>
 </html>
-

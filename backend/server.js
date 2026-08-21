@@ -149,6 +149,8 @@ app.get('/pedidos', async (req, res) => {
                 a.hora_agendamento,
                 a.status AS status_agendamento,
                 a.tecnico_id,
+                a.observacoes_retorno,
+                a.data_retorno,
                 t.nome AS tecnico
             FROM pedido p
             JOIN obra o
@@ -237,6 +239,8 @@ app.get('/agendamentos', async (req, res) => {
                 a.hora_agendamento,
                 a.status,
                 a.tecnico_id,
+                a.observacoes_retorno,
+                a.data_retorno,
                 t.nome AS tecnico,
                 p.id AS pedido_id,
                 p.numero_pedido,
@@ -366,6 +370,92 @@ app.post('/agendamentos', async (req, res) => {
 
         res.status(500).json({
             erro: 'Erro ao agendar medição'
+        });
+    }
+});
+
+app.put('/agendamentos/:id/retorno', async (req, res) => {
+
+    const { id } = req.params;
+
+    const {
+        tecnico_id,
+        status,
+        observacoes_retorno
+    } = req.body;
+
+    const statusPermitidos = [
+        'MEDICAO REALIZADA',
+        'MEDICAO NAO REALIZADA'
+    ];
+
+    if (!statusPermitidos.includes(status)) {
+        return res.status(400).json({
+            erro: 'Resultado da medição inválido'
+        });
+    }
+
+    if (
+        !observacoes_retorno ||
+        observacoes_retorno.trim() === ''
+    ) {
+        return res.status(400).json({
+            erro: 'Observações do retorno são obrigatórias'
+        });
+    }
+
+    try {
+
+        const sql = `
+            UPDATE agendamento
+            SET status = $1,
+                observacoes_retorno = $2,
+                data_retorno = CURRENT_DATE
+            WHERE id = $3
+              AND tecnico_id = $4
+              AND status = 'AGENDADO'
+              AND data_retorno IS NULL
+            RETURNING
+                id,
+                pedido_id,
+                data_agendamento,
+                hora_agendamento,
+                status,
+                tecnico_id,
+                observacoes_retorno,
+                data_retorno;
+        `;
+
+        const result = await pool.query(
+            sql,
+            [
+                status,
+                observacoes_retorno.trim(),
+                id,
+                tecnico_id
+            ]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({
+                erro: 'Agendamento não encontrado, já respondido ou não pertence ao técnico informado'
+            });
+        }
+
+        res.json({
+            mensagem: 'Retorno da medição registrado com sucesso',
+            agendamento: result.rows[0]
+        });
+
+    } catch (error) {
+
+        console.error(
+            'Erro ao registrar retorno da medição:',
+            error
+        );
+
+        res.status(500).json({
+            erro: 'Erro ao registrar retorno da medição'
         });
     }
 });
