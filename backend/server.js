@@ -163,13 +163,14 @@ app.get('/pedidos', async (req, res) => {
                 ON a.pedido_id = p.id
             LEFT JOIN usuario t
                 ON t.id = a.tecnico_id
+            WHERE p.arquivado = false
         `;
 
         const valores = [];
 
         if (usuario_id) {
             sql += `
-                WHERE p.usuario_id = $1
+                AND p.usuario_id = $1
             `;
 
             valores.push(usuario_id);
@@ -189,6 +190,52 @@ app.get('/pedidos', async (req, res) => {
 
         res.status(500).json({
             erro: 'Erro ao buscar solicitações'
+        });
+    }
+});
+
+app.put('/pedidos/:id/arquivar', async (req, res) => {
+
+    const { id } = req.params;
+
+    try {
+
+        const sql = `
+            UPDATE pedido
+            SET arquivado = true
+            WHERE id = $1
+              AND arquivado = false
+            RETURNING
+                id,
+                numero_pedido,
+                arquivado;
+        `;
+
+        const result = await pool.query(
+            sql,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                erro: 'Solicitação não encontrada ou já arquivada'
+            });
+        }
+
+        res.json({
+            mensagem: 'Solicitação arquivada com sucesso',
+            pedido: result.rows[0]
+        });
+
+    } catch (error) {
+
+        console.error(
+            'Erro ao arquivar solicitação:',
+            error
+        );
+
+        res.status(500).json({
+            erro: 'Erro ao arquivar solicitação'
         });
     }
 });
@@ -263,6 +310,7 @@ app.get('/agendamentos', async (req, res) => {
             JOIN usuario t
                 ON t.id = a.tecnico_id
             WHERE a.tecnico_id = $1
+              AND p.arquivado = false
             ORDER BY
                 a.data_agendamento ASC,
                 a.hora_agendamento ASC;
@@ -295,6 +343,22 @@ app.post('/agendamentos', async (req, res) => {
     } = req.body;
 
     try {
+
+        const pedidoResult = await pool.query(
+            `
+                SELECT id
+                FROM pedido
+                WHERE id = $1
+                  AND arquivado = false;
+            `,
+            [pedido_id]
+        );
+
+        if (pedidoResult.rows.length === 0) {
+            return res.status(400).json({
+                erro: 'Solicitação inválida ou arquivada'
+            });
+        }
 
         const tecnicoResult = await pool.query(
             `

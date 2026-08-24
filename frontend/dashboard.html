@@ -798,6 +798,19 @@
                                     : ''
                             }
 
+                            ${
+                                usuario.perfil === 'ADMIN'
+                                    ? `
+                                        <button
+                                            type="button"
+                                            onclick="excluirSolicitacao(${solicitacao.id})"
+                                        >
+                                            Excluir
+                                        </button>
+                                    `
+                                    : ''
+                            }
+
                         </div>
 
                         ${areaAgendamento}
@@ -1016,6 +1029,45 @@
         function novaSolicitacao() {
             window.location.href = 'solicitacao.html';
         }
+
+async function excluirSolicitacao(pedidoId) {
+
+    if (usuario.perfil !== 'ADMIN') {
+        alert('Apenas o ADMIN pode excluir solicitações.');
+        return;
+    }
+
+    const confirmar = window.confirm(
+        'ATENÇÃO! Deseja realmente excluir esta solicitação? Ela deixará de ser exibida para todos os usuários do sistema. Esta ação não poderá ser desfeita pela aplicação.'
+    );
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+
+        const resposta = await fetch(
+            `/pedidos/${pedidoId}/arquivar`,
+            {
+                method: 'PUT'
+            }
+        );
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+            alert(dados.erro);
+            return;
+        }
+
+        await carregarSolicitacoes();
+
+    } catch (error) {
+
+        alert('Erro ao excluir solicitação.');
+    }
+}
 
         function sair() {
             localStorage.removeItem('usuario');

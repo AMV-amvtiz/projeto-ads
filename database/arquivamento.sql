@@ -1,0 +1,2 @@
+ALTER TABLE pedido
+ADD COLUMN arquivado BOOLEAN NOT NULL DEFAULT false;
